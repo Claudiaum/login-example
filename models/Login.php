@@ -22,17 +22,17 @@ class Login {
     $return = array("confirmation" => false);
     $this->user_email = $email;
     $query = "SELECT
-        user_id as id,
-        user_email as email,
-        user_photo as photo,
-        user_subscription_date as subscription_date,
-        user_last_login as last_login,
-        user_clearance as clearance,
-        user_status as status
+        user_id,
+        user_email,
+        user_photo,
+        user_subscription_date,
+        user_last_login,
+        user_clearance,
+        user_status
       FROM 
         $this->table
       WHERE
-        user_email = :email,
+        user_email = :email AND
         user_password = :password
       LIMIT 0,1
     ";
@@ -52,7 +52,7 @@ class Login {
       return $return;
     }
 
-    // If user don't exists
+    // If user doesn't exists
     if($stmt->rowCount()>0){
       $return["message"] = "Client not subscribed.";
       $return["reason"] = "not_subscribed";
