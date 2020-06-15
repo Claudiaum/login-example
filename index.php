@@ -1,3 +1,8 @@
+<?php
+// write database/login/auth tests
+
+?>
+
 <!doctype html>
 <html>
   <head>

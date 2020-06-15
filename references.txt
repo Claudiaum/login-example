@@ -1,0 +1,14 @@
+# Create Auth Tokens with PHP
+https://davidwalsh.name/random_bytes
+
+# Secure Login Form Authentication System (Cookies, Sessions, Token, PDO) PHP & MySQL Tutorial 
+https://www.youtube.com/watch?v=sRuRRdJCB8E
+
+# PDO Crash Course (PHP)
+https://www.youtube.com/watch?v=kEW6f7Pilc4
+
+# PHP REST API From Scratch [1] - Database & Read
+https://www.youtube.com/watch?v=OEWXbpUMODk
+
+# How PHP Type Declarations Actually Work
+https://dev.to/robdwaller/how-php-type-declarations-actually-work-1mm5#:~:text=Developers%20can%20turn%20strict%20types,the%20top%20of%20the%20file
