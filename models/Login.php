@@ -134,7 +134,6 @@ class Login {
     return $return;
   }
   
-
   //gets
   public function getUserId(){
     return $this->user_id;

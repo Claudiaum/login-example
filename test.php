@@ -39,29 +39,6 @@ function write_on_table($class, $func, $in, $out, $confirmation ){
   echo $html;
 }
 
-$valid_expiration = time()+86400;
-$valid_cookie = json_encode(array(
-  "token" => "123123123",
-  "expiration" => $valid_expiration,
-));
-setcookie("valid_cookie",$valid_cookie, $valid_expiration, "/");
-
-
-$late_expiration = time()-86400;
-$late_cookie = json_encode(array(
-  "token" => "123123123",
-  "expiration" => $valid_expiration,
-));
-setcookie("late_cookie",$late_cookie, $late_expiration, "/");
-
-
-$invalid_expiration = time()+86400;
-$invalid_cookie = json_encode(array(
-  "token" => "55555555",
-  "expiration" => $valid_expiration,
-));
-setcookie("invalid_cookie",$invalid_cookie, $invalid_expiration, "/");
-
 ?>
 
 <!doctype html>
@@ -177,7 +154,7 @@ setcookie("invalid_cookie",$invalid_cookie, $invalid_expiration, "/");
           $auth_test = new Auth($conn_test,$login_test->getUserId());
 
           // create new test token
-          // new($id,$console_name,$console_type,$new_token = 0)
+          // new($console_name,$console_type,$new_token = 0)
           $return_login_new = $auth_test->new(
             $_SERVER['HTTP_USER_AGENT'],
             "123123123"
@@ -221,6 +198,8 @@ setcookie("invalid_cookie",$invalid_cookie, $invalid_expiration, "/");
           );
 
           // verify wrong cookie date
+          // to make this verification works, Auth.php has to be changed to save
+          // the expirantion to time()+0;
           sleep(1);
           $new_cookie = array(
             "expiration" => $return_login_verify["expiration"],

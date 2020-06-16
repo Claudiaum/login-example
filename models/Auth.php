@@ -74,7 +74,8 @@ class Auth {
       $return["reason"] = "cookie_renewed";
       $new_token = bin2hex(random_bytes(32));
       // $expiration = time()+(60*60*24*7); // 1 week to renew
-      $expiration = date('Y-m-d H:i:s',time()+(0)); // 0 seconds to renew
+      // $expiration = date('Y-m-d H:i:s',time()+(0)); // 0 seconds to renew / test
+      $expiration = date('Y-m-d H:i:s',time()+(60)); // 60 seconds to renew
       $return['new_token'] = $new_token;
       $return['expiration'] = strtotime($expiration);
       // return $return;
