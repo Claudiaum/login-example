@@ -1,0 +1,7 @@
+.small-font {
+  font-size: 12px;
+}
+tr td {
+  vertical-align: middle !important;
+  max-width: 250px;
+}

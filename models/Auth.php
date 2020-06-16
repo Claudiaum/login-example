@@ -15,7 +15,7 @@ class Auth {
 
   public function verify($cookie){
     $return = array("confirmation"=> false);
-    $token = $cookie["token"] || "";
+    $token = isset($cookie["token"]) ? $cookie["token"] : "";
 
     $query = "SELECT
       session_id,
@@ -52,13 +52,12 @@ class Auth {
 
     $fetch = $stmt->fetch();
     // If cookie expired destroy token
-    if($fetch->session_expiration < $cookie['expiration']){
+    if(strtotime($fetch->session_expiration) < time()){
       $return["message"] = "Token expired.";
       $return["reason"] = "cookie_expired";
-      $delete_query = "DELETE FROM $table 
+      $delete_query = "DELETE FROM $this->table 
         WHERE
           session_token = :token
-        LIMIT 1
       ";
       $delete_stmt = $this->conn->prepare($delete_query);
       $delete_stmt->execute(["token"=>$token]);
@@ -70,18 +69,19 @@ class Auth {
       return $return;
     }else{
       // If cookie  is fine
-      $return["authorization"] = true;
+      $return["confirmation"] = true;
       $return["message"] = "Cookie will be renewed.";
       $return["reason"] = "cookie_renewed";
       $new_token = bin2hex(random_bytes(32));
       // $expiration = time()+(60*60*24*7); // 1 week to renew
-      $expiration = time()+(60); // 60 seconds to renew
+      $expiration = date('Y-m-d H:i:s',time()+(0)); // 0 seconds to renew
       $return['new_token'] = $new_token;
-      $return['expiration'] = $expiration;
+      $return['expiration'] = strtotime($expiration);
+      // return $return;
       
-      $insert_query = "UPDATE $table
+      $insert_query = "UPDATE $this->table
         SET
-          session_token = :new_token
+          session_token = :new_token,
           session_expiration = :expiration
         WHERE
           session_token = :token
@@ -95,7 +95,7 @@ class Auth {
       ]);
       
       if(!$insert_stmt){
-        $return["authorization"] = false;
+        $return["confirmation"] = false;
         $return["error"] = "DB not working: ".$insert_stmt->errorInfo(); 
       }
 
@@ -103,17 +103,20 @@ class Auth {
     }
   }
 
-  public function new($id,$console_name,$console_type){
+  public function new($console_name,$new_token = 0){
     $return = array("confirmation" => false);
     $return["message"] = "Cookie created.";
     $return["reason"] = "cookie_created";
-    $new_token = bin2hex(random_bytes(32));
+    $console_type = !strpos($console_name, "Mobi") ? "PC" : "Mobile";
+    if($new_token === 0){
+      $new_token = bin2hex(random_bytes(32));
+    }
     // $expiration = time()+(60*60*24*7); // 1 week to renew
-    $expiration = time()+(60); // 60 seconds to renew
+    $expiration = date('Y-m-d H:i:s',time()+(60)); // 0 seconds to renew
     $return['new_token'] = $new_token;
-    $return['expiration'] = $expiration;
+    $return['expiration'] = strtotime($expiration);
     
-    $update_query = "INSERT INTO $table
+    $update_query = "INSERT INTO $this->table
       (`session_token`, `session_expiration`, `session_user_id`, `session_console_name`, `session_console_type`) 
       VALUES 
       (:new_token,:expiration,:user_id,:console_name,:console_type)
@@ -122,7 +125,7 @@ class Auth {
     $update_stmt->execute([
       "new_token"=>$new_token,
       "expiration"=>$expiration,
-      "user_id"=>$id,
+      "user_id"=>$this->user_id,
       "console_name"=>$console_name,
       "console_type"=>$console_type,
     ]);
@@ -131,6 +134,34 @@ class Auth {
       $return["error"] = "DB not working: ".$update_stmt->errorInfo(); 
     }
 
+    $return["confirmation"] = true;
+    return $return;
+  }
+
+  public function clear_sessions(){
+    $return = array("confirmation" => false);
+    // $this->user_email = $email;
+    $query = "DELETE FROM $this->table
+      WHERE
+        session_user_id = :user_id
+    ";
+
+    // Prepare statement
+    $stmt = $this->conn->prepare($query);
+
+    // Execute query with boolean return
+    $stmt->execute([
+      "user_id"=>$this->user_id
+    ]);
+    
+    // DB error
+    if(!$stmt){
+      $return["error"] = "DB not working: ".$stmt->errorInfo(); 
+      return $return;
+    }
+
+    $return["confirmation"] = true;
+    $return["user_id"] = $this->user_id;
     return $return;
   }
 
