@@ -1,4 +1,6 @@
 <?php
+
+date_default_timezone_set("America/Sao_Paulo");
 class Auth {
 
   // Database params
@@ -13,7 +15,7 @@ class Auth {
     $this->user_id = $user_id;
   }
 
-  public function verify($cookie){
+  public function verify_cookie($cookie){
     $return = array("confirmation"=> false);
     $token = isset($cookie["token"]) ? $cookie["token"] : "";
 
@@ -27,14 +29,16 @@ class Auth {
       $this->table
     WHERE
       session_user_id = :user_id AND
-      session_token = :token
+      session_token = :token AND
+      session_expiration = :expiration
     LIMIT 0,1
     ";
 
     $stmt = $this->conn->prepare($query);
     $stmt->execute([
       "user_id" => $this->user_id,
-      "token" => $token
+      "token" => $token,
+      "expiration" => date('Y-m-d H:i:s',$cookie['expiration'])
     ]);
     
     // DB error
@@ -75,7 +79,8 @@ class Auth {
       $new_token = bin2hex(random_bytes(32));
       // $expiration = time()+(60*60*24*7); // 1 week to renew
       // $expiration = date('Y-m-d H:i:s',time()+(0)); // 0 seconds to renew / test
-      $expiration = date('Y-m-d H:i:s',time()+(60)); // 60 seconds to renew
+      // $expiration = date('Y-m-d H:i:s',time()+(60)); // 60 seconds to renew
+      $expiration = date('Y-m-d H:i:s',time()+(86400)); // 1 day renew
       $return['new_token'] = $new_token;
       $return['expiration'] = strtotime($expiration);
       // return $return;
@@ -104,6 +109,69 @@ class Auth {
     }
   }
 
+  public function verify_session($session){
+    $return = array("confirmation"=> false);
+    $token = isset($session["token"]) ? $session["token"] : "";
+
+    $query = "SELECT
+      session_id,
+      session_token,
+      session_expiration,
+      session_console_name,
+      session_console_type
+    FROM
+      $this->table
+    WHERE
+      session_user_id = :user_id AND
+      session_token = :token AND
+      session_expiration = :expiration
+    LIMIT 0,1
+    ";
+
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute([
+      "user_id" => $this->user_id,
+      "token" => $token,
+      "expiration" =>  date('Y-m-d H:i:s',$session['expiration'])
+    ]);
+    
+    // DB error
+    if(!$stmt){
+      $return["error"] = "DB not working: ".$stmt->errorInfo(); 
+      return $return;
+    }
+
+    // If token doesn't exists
+    if($stmt->rowCount()===0){
+      $return["message"] = "Token doesn't exists, but it should.";
+      $return["reason"] = "session_copied";
+      return $return;
+    }
+
+    $fetch = $stmt->fetch();
+    // If session expired destroy token
+    if(strtotime($fetch->session_expiration) < time()){
+      $return["message"] = "Token expired.";
+      $return["reason"] = "session_expired";
+      $delete_query = "DELETE FROM $this->table 
+        WHERE
+          session_token = :token
+      ";
+      $delete_stmt = $this->conn->prepare($delete_query);
+      $delete_stmt->execute(["token"=>$token]);
+
+      if(!$delete_stmt){
+        $return["error"] = "DB not working: ".$delete_stmt->errorInfo(); 
+      }
+    }else{
+      // If session  is fine
+      $return["confirmation"] = true;
+      $return["message"] = "Session is fine.";
+      $return["reason"] = "session_fine";
+    }
+    return $return;
+  }
+
   public function new($console_name,$new_token = 0){
     $return = array("confirmation" => false);
     $return["message"] = "Cookie created.";
@@ -113,7 +181,8 @@ class Auth {
       $new_token = bin2hex(random_bytes(32));
     }
     // $expiration = time()+(60*60*24*7); // 1 week to renew
-    $expiration = date('Y-m-d H:i:s',time()+(60)); // 0 seconds to renew
+    // $expiration = date('Y-m-d H:i:s',time()+(60)); // 0 seconds to renew
+    $expiration = date('Y-m-d H:i:s',time()+(86400)); // 1 day renew
     $return['new_token'] = $new_token;
     $return['expiration'] = strtotime($expiration);
     

@@ -59,7 +59,7 @@ function write_on_table($class, $func, $in, $out, $confirmation ){
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
+    <link rel="manifest" href="site.webmanifest">
     <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#5bbad5">
     <meta name="msapplication-TileColor" content="#da532c">
     <meta name="theme-color" content="#ffffff">
@@ -174,10 +174,10 @@ function write_on_table($class, $func, $in, $out, $confirmation ){
             "expiration" => $return_login_new["expiration"],
             "token" => "123123123",
           );
-          $return_login_verify = $auth_test->verify($new_cookie);
+          $return_login_verify = $auth_test->verify_cookie($new_cookie);
           write_on_table(
             "models/Auth.php",
-            "verify(\$new_cookie)",
+            "verify_cookie(\$new_cookie)",
             $new_cookie,
             $return_login_verify,
             $return_login_verify['confirmation'],
@@ -188,31 +188,58 @@ function write_on_table($class, $func, $in, $out, $confirmation ){
             "expiration" => $return_login_verify["expiration"],
             "token" => "123123123",
           );
-          $return_login_verify_wrong_token = $auth_test->verify($new_cookie);
+          $return_login_verify_wrong_token = $auth_test->verify_cookie($new_cookie);
           write_on_table(
             "models/Auth.php",
-            "verify(\$new_cookie)",
+            "verify_cookie(\$new_cookie)",
             $new_cookie,
             $return_login_verify_wrong_token,
             !$return_login_verify_wrong_token['confirmation'],
           );
 
           // verify wrong cookie date
-          // to make this verification works, Auth.php has to be changed to save
-          // the expirantion to time()+0;
-          sleep(1);
           $new_cookie = array(
+            "expiration" => 0,
+            "token" => $return_login_verify["new_token"],
+          );
+          $return_verify_session_wrong = $auth_test->verify_cookie($new_cookie);
+          write_on_table(
+            "models/Auth.php",
+            "verify_cookie(\$new_cookie)",
+            $new_cookie,
+            $return_verify_session_wrong,
+            !$return_verify_session_wrong['confirmation'],
+          );
+
+          // verify session
+          $session = array(
             "expiration" => $return_login_verify["expiration"],
             "token" => $return_login_verify["new_token"],
           );
-          $return_login_verify_wrong = $auth_test->verify($new_cookie);
+          $return_verify_session = $auth_test->verify_session($session);
           write_on_table(
             "models/Auth.php",
-            "verify(\$new_cookie)",
-            $new_cookie,
-            $return_login_verify_wrong,
-            !$return_login_verify_wrong['confirmation'],
+            "verify_session(\$session)",
+            $session,
+            $return_verify_session,
+            $return_verify_session['confirmation'],
           );
+
+          
+          // verify expired session
+          $session = array(
+            "expiration" => $return_login_verify["expiration"] - 86401,
+            "token" => $return_login_verify["new_token"],
+          );
+          $return_verify_session = $auth_test->verify_session($session);
+          write_on_table(
+            "models/Auth.php",
+            "verify_session(\$session)",
+            $session,
+            $return_verify_session,
+            !$return_verify_session['confirmation'],
+          );
+
 
           // delete test user
           $return_login_delete = $login_test->delete_user($email_test,$pass_test);
